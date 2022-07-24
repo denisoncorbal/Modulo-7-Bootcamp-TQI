@@ -1,6 +1,8 @@
 package one.digitalinnovation.gof.controller;
 
+import java.util.logging.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -13,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import one.digitalinnovation.gof.model.Cliente;
 import one.digitalinnovation.gof.service.ClienteService;
+import org.springframework.web.server.ResponseStatusException;
 
 /**
  * Esse {@link RestController} representa nossa <b>Facade</b>, pois abstrai toda
@@ -24,6 +27,7 @@ import one.digitalinnovation.gof.service.ClienteService;
 @RestController
 @RequestMapping("clientes")
 public class ClienteRestController {
+
 
 	@Autowired
 	private ClienteService clienteService;
@@ -40,13 +44,25 @@ public class ClienteRestController {
 
 	@PostMapping
 	public ResponseEntity<Cliente> inserir(@RequestBody Cliente cliente) {
-		clienteService.inserir(cliente);
+		try{
+			clienteService.inserir(cliente);
+		}
+		catch(Exception e){
+			Logger.getAnonymousLogger().info(e.getMessage());
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+		}
 		return ResponseEntity.ok(cliente);
 	}
 
 	@PutMapping("/{id}")
 	public ResponseEntity<Cliente> atualizar(@PathVariable Long id, @RequestBody Cliente cliente) {
-		clienteService.atualizar(id, cliente);
+		try{
+			clienteService.atualizar(id, cliente);
+		}
+		catch(Exception e){
+			Logger.getAnonymousLogger().info(e.getMessage());
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+		}
 		return ResponseEntity.ok(cliente);
 	}
 

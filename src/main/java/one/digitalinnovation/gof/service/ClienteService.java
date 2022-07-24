@@ -15,9 +15,9 @@ public interface ClienteService {
 
 	Cliente buscarPorId(Long id);
 
-	void inserir(Cliente cliente);
+	void inserir(Cliente cliente) throws Exception;
 
-	void atualizar(Long id, Cliente cliente);
+	void atualizar(Long id, Cliente cliente) throws Exception;
 
 	void deletar(Long id);
 

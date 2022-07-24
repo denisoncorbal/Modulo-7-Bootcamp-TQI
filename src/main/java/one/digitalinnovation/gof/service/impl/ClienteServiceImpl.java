@@ -2,6 +2,11 @@ package one.digitalinnovation.gof.service.impl;
 
 import java.util.Optional;
 
+import one.digitalinnovation.gof.service.validation.ClienteEnderecoValidationHandler;
+import one.digitalinnovation.gof.service.validation.ClienteNameValidationHandler;
+import one.digitalinnovation.gof.service.validation.EnderecoDddValidationHandler;
+import one.digitalinnovation.gof.service.validation.EnderecoUfValidationHandler;
+import one.digitalinnovation.gof.service.validation.ValidationHandler;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -47,16 +52,21 @@ public class ClienteServiceImpl implements ClienteService {
 	}
 
 	@Override
-	public void inserir(Cliente cliente) {
+	public void inserir(Cliente cliente) throws Exception {
 		salvarClienteComCep(cliente);
 	}
 
 	@Override
-	public void atualizar(Long id, Cliente cliente) {
+	public void atualizar(Long id, Cliente cliente) throws Exception {
 		// Buscar Cliente por ID, caso exista:
 		Optional<Cliente> clienteBd = clienteRepository.findById(id);
 		if (clienteBd.isPresent()) {
-			salvarClienteComCep(cliente);
+			try{
+				salvarClienteComCep(cliente);
+			}
+			catch (Exception e){
+				throw new NullPointerException(e.getMessage());
+			}
 		}
 	}
 
@@ -66,18 +76,48 @@ public class ClienteServiceImpl implements ClienteService {
 		clienteRepository.deleteById(id);
 	}
 
-	private void salvarClienteComCep(Cliente cliente) {
+	private void salvarClienteComCep(Cliente cliente) throws Exception {
 		// Verificar se o Endereco do Cliente já existe (pelo CEP).
 		String cep = cliente.getEndereco().getCep();
 		Endereco endereco = enderecoRepository.findById(cep).orElseGet(() -> {
 			// Caso não exista, integrar com o ViaCEP e persistir o retorno.
 			Endereco novoEndereco = viaCepService.consultarCep(cep);
+			try{
+				validarEndereco(novoEndereco);
+			}
+			catch (Exception e){
+				throw new NullPointerException(e.getMessage());
+			}
 			enderecoRepository.save(novoEndereco);
 			return novoEndereco;
 		});
 		cliente.setEndereco(endereco);
 		// Inserir Cliente, vinculando o Endereco (novo ou existente).
+		try{
+			validarCliente(cliente);
+		}
+		catch (Exception e){
+			throw new NullPointerException(e.getMessage());
+		}
 		clienteRepository.save(cliente);
+	}
+
+	private void validarCliente(Cliente cliente) throws Exception{
+		ClienteNameValidationHandler clienteNameValidationHandler = new ClienteNameValidationHandler();
+		ClienteEnderecoValidationHandler clienteEnderecoValidationHandler = new ClienteEnderecoValidationHandler();
+
+		clienteNameValidationHandler.setNext(clienteEnderecoValidationHandler);
+
+		clienteNameValidationHandler.handle(cliente);
+	}
+
+	private void validarEndereco(Endereco endereco) throws Exception{
+		EnderecoUfValidationHandler enderecoUfValidationHandler = new EnderecoUfValidationHandler();
+		EnderecoDddValidationHandler enderecoDddValidationHandler = new EnderecoDddValidationHandler();
+
+		enderecoUfValidationHandler.setNext(enderecoDddValidationHandler);
+
+		enderecoUfValidationHandler.handle(endereco);
 	}
 
 }
